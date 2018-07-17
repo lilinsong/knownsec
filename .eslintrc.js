@@ -1,4 +1,7 @@
 module.exports = {
+    "extends": [
+      "google",
+    ],
     "env": {
         "es6": true,
         "node": true
@@ -9,10 +12,6 @@ module.exports = {
         "sourceType": "module"
     },
     "rules": {
-        "indent": [
-            "error",
-            "tab"
-        ],
         "linebreak-style": [
             "error",
             "unix"

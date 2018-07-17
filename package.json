@@ -9,7 +9,7 @@
   "author": "lilinsong",
   "license": "ISC",
   "dependencies": {
-    "redis": "^2.8.0"
+    "mongo-db": "^1.0.2"
   },
   "devDependencies": {
     "eslint": "^5.1.0"
