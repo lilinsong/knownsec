@@ -1,0 +1,11 @@
+{
+  "mongo": {
+    "database": "test",
+    "task": "task",
+    "machine":"machine",
+    "user": "lls",
+    "password": "P@ssc0de",
+    "host": "localhost",
+    "port": 27017
+  }
+}
