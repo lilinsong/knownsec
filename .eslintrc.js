@@ -24,5 +24,10 @@ module.exports = {
             "error",
             "always"
         ]
+    },
+    "globals": {
+      "logger": true,
+      "Task": true,
+      "Machine": true
     }
 };
