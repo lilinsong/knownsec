@@ -12,8 +12,11 @@
   "author": "lilinsong",
   "license": "ISC",
   "dependencies": {
+    "bluebird": "^3.5.1",
+    "co": "^4.6.0",
     "config": "^1.21.0",
     "mongoose": "^5.2.4",
+    "ramda": "^0.25.0",
     "winston": "^2.2.0"
   },
   "devDependencies": {
