@@ -125,5 +125,4 @@ module.exports = {
   onTaskDone,
   onTaskSchedule,
   getMachineInfo,
-  checkAvailableMachines
 };
