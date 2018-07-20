@@ -5,23 +5,17 @@ global.logger = require('./app/logger');
 global.Promise = Promise;
 global.Task = Promise.promisifyAll(Task);
 global.Machine = Promise.promisifyAll(Machine);
+const {onTaskSchedule} = require('./app/scheduler');
+const init = require('./app/init');
 
-// const init = require('./app/init');
-// init();
 
 // const opts = {'_id': 0, '__v': 0};
-// Machine.find({}, opts)
-// .then(res => {
-//   res.forEach(data => {
-//     logger.debug(data._doc);
-//   });
-// })
-// .catch(err => logger.error(err));
-const {onTaskSchedule} = require('./app/scheduler');
-const task = {
-  'id': 0,
-  'group': 'group2',
-  'cpus': 1,
-  'times': 10
-};
-onTaskSchedule(task).then(res => logger.debug(task.id + ' --> ' + res));
+init()
+  .then(() => Task.find({ 'machineId': null }))
+  .then(res => {
+    res.forEach(task => {
+      onTaskSchedule(task._doc)
+        .then(machineId => logger.debug(task._doc.id + ' --> ' + machineId));
+    });
+  })
+  .catch(err => logger.error(err));

@@ -1,36 +1,79 @@
 const co = require('co');
 const R = require('ramda');
+const AsyncLock = require('async-lock');
+const lock = new AsyncLock();
 // 当任务完成时调用, 当任务被分配到机器上 Task.times 之后调用
-function onTaskDone(Task) {
-  const machindeId = getTaskMachineId(Task);
-  updateMachineUseCpusById(machindeId); //设置连接cpu减1
-  const nextTask = getNextTask(machind.group); //取得当前machine能运行的任务运行
-  onTaskSchedule(Task);
+function onTaskDone(task) {
+  return co(function* () {
+    const machineId = yield getTaskMachineId(task);
+    return Machine.find({ 'id': machineId })
+      .then(machines => {
+        machines[0]._doc.usedCpus --; //task完成后，对应machine的连接cpu减1
+        return machines[0].save()
+          .then(() => {
+            logger.debug(`释放machine ${machineId}成功！`);
+            return machines[0];
+          });
+      })
+      .then(machine => {
+        return getNextTask(machine);
+      })
+      .then(nextTask => {
+        logger.debug('执行下一个任务：', nextTask);
+        return onTaskSchedule(nextTask);
+      });
+  });
+}
+
+function getTaskMachineId(task) {
+  return Task.find({'id': task.id})
+    .then(res => {
+      logger.debug(`task ${task.id} 在 machine ${res[0]._doc.machineId} 执行完成！`);
+      return res[0]._doc.machineId;
+    });
+}
+
+function getNextTask(machine) {
+  // 如果machine.group为''说明当前空出的machine可以执行所有任务，否则取出当前空出的machine能执行的任务执行
+  let query = { 'machineId': null }; // machineId为null说明该任务还没有执行
+  if (machine.group !== '') {
+    query = { 'group': machine.group, 'machineId': null };
+  }
+  return Task.findOne(query)
+    .then(task => {
+      return task;
+    });
 }
 
 // 当需要任务开始执行时调用, 返回当前可执行该任务的 Machine, 如没有满足条件的 Machine 则返回 null
 function onTaskSchedule(task) {
-  return co(function* () {
-    const usefulMachines = yield checkAvailableMachines(task);
-    if (!usefulMachines) {
-      return Promise.resolve(null);
-    }
-    // 优先使用group能分配上的machine，如果多个machine满足，则优先使用id更小的
-    const sortMachines = R.sortWith([R.descend(R.prop('group')), R.ascend(R.prop('id'))])(usefulMachines);
-    sortMachines[0].usedCpus ++;
-    return Promise.all([
-      Machine.update({ 'id': sortMachines[0].id }, { 'usedCpus': sortMachines[0].usedCpus })
-        .then(res => logger.debug('更新usedCpus成功：', res))
-        .catch(err => logger.error('更新usedCpus失败，原因为：', err)),
-      Task.update({ 'id': task.id }, {  '$set': { 'machindeId': sortMachines[0].id }}, {strict: false, overwrite: true})
-        .then(res => logger.debug('更新machindeId成功：', res))
-        .catch(err => logger.error('更新machindeId失败，原因为：', err))
-    ])
-      .then(() => {
-        return sortMachines[0].id;
-      });
+  return lock.acquire('onTaskSchedule', () => {
+    return co(function* () {
+      const usefulMachines = yield checkAvailableMachines(task);
+      if (!usefulMachines) {
+        return Promise.resolve(null);
+      }
+      // 优先使用group能分配上的machine，如果多个machine满足，则优先使用id更小的
+      const sortMachines = R.sortWith([R.descend(R.prop('group')), R.ascend(R.prop('id'))])(usefulMachines);
+      sortMachines[0].usedCpus ++;
+      return Promise.all([
+        Machine.update({ 'id': sortMachines[0].id }, { 'usedCpus': sortMachines[0].usedCpus })
+          .then(res => logger.debug('更新usedCpus成功：', res))
+          .catch(err => logger.error('更新usedCpus失败，原因为：', err)),
+        Task.update({ 'id': task.id }, { '$set': { 'machineId': sortMachines[0].id }})
+          .then(res => logger.debug('更新machineId成功：', res))
+          .catch(err => logger.error('更新machineId失败，原因为：', err))
+      ])
+        // .then(() => setTimeout(() => {
+        //   onTaskDone(task);
+        // }, task.times * 1000))
+        .then(() => {
+          return sortMachines[0].id;
+        });
+    });
   });
 }
+
 function checkAvailableMachines(task) {
   return co(function* () {
     const machines = yield getMachineInfo();
@@ -61,7 +104,6 @@ function getMachineInfo() {
   return Machine.find({}, opts)
     .then(res => {
       const machines = res.map(data => data._doc);
-      logger.debug('取得的machine信息为：', machines);
       return machines;
     })
     .catch(err => logger.error(err));
