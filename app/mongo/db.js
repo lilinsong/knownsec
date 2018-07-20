@@ -6,10 +6,9 @@ var mongoose = require('mongoose');
 const host = config.get('mongo.host');
 const port = config.get('mongo.port');
 const database = config.get('mongo.database');
-// const task = config.get('mongo.task');
-// const machine = config.get('mongo.machine');
 
 const url = `mongodb://${host}:${port}/${database}`;
+// const url = `mongodb://${user}:${password}@${host}:${port}/${database}`;
 
 /**
  * 连接
