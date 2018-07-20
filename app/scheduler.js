@@ -22,7 +22,7 @@ function onTaskSchedule(task) {
       Machine.update({ 'id': sortMachines[0].id }, { 'usedCpus': sortMachines[0].usedCpus })
         .then(res => logger.debug('更新usedCpus成功：', res))
         .catch(err => logger.error('更新usedCpus失败，原因为：', err)),
-      Task.update({ 'id': task.id }, { 'machindeId': sortMachines[0].id })
+      Task.update({ 'id': task.id }, {  '$set': { 'machindeId': sortMachines[0].id }}, {strict: false, overwrite: true})
         .then(res => logger.debug('更新machindeId成功：', res))
         .catch(err => logger.error('更新machindeId失败，原因为：', err))
     ])
