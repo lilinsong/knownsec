@@ -1,4 +1,4 @@
-// 启动初始化，为了方便，项目启动的时候初始化machine信息(认为所以machine均为空闲状态)
+// 启动初始化，为了方便，项目启动的时候初始化machine信息(认为所有machine均为空闲状态)
 // 实际运行过程中应该检测Task是否实际完成
 const {getMachineInfo} = require('./scheduler');
 function init() {
@@ -11,7 +11,7 @@ function init() {
       return Promise.all(updates);
     })
     .then(() => logger.debug('初始化完成！'))
-    .catch(err => logger.debug('初始化失败，原因为：', err));
+    .catch(err => logger.error('初始化失败，原因为：', err));
 }
 
 module.exports = init;

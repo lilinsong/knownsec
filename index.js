@@ -8,14 +8,11 @@ global.Machine = Promise.promisifyAll(Machine);
 const {onTaskSchedule} = require('./app/scheduler');
 const init = require('./app/init');
 
-
-// const opts = {'_id': 0, '__v': 0};
 init()
   .then(() => Task.find({ 'machineId': null }))
   .then(res => {
     res.forEach(task => {
-      onTaskSchedule(task._doc)
-        .then(machineId => logger.debug(task._doc.id + ' --> ' + machineId));
+      onTaskSchedule(task._doc);
     });
   })
   .catch(err => logger.error(err));

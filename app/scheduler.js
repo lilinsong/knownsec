@@ -3,25 +3,35 @@ const R = require('ramda');
 const AsyncLock = require('async-lock');
 const lock = new AsyncLock();
 // 当任务完成时调用, 当任务被分配到机器上 Task.times 之后调用
+// 任务完成时应该做几件事： 1、从当前任务取得machineId，确认空闲出的machine；
+// 2、将该空闲出的machine的当前使用cpu数减1； 3、确定该空闲出的machine能执行的任务； 4、取出对应任务类型的任务执行
 function onTaskDone(task) {
-  return co(function* () {
-    const machineId = yield getTaskMachineId(task);
-    return Machine.find({ 'id': machineId })
-      .then(machines => {
-        machines[0]._doc.usedCpus --; //task完成后，对应machine的连接cpu减1
-        return machines[0].save()
-          .then(() => {
-            logger.debug(`释放machine ${machineId}成功！`);
-            return machines[0];
-          });
-      })
-      .then(machine => {
-        return getNextTask(machine);
-      })
-      .then(nextTask => {
-        logger.debug('执行下一个任务：', nextTask);
-        return onTaskSchedule(nextTask);
-      });
+  return lock.acquire('onTaskDone', () => {
+    return co(function* () {
+      const machineId = yield getTaskMachineId(task);
+      return Machine.find({ 'id': machineId })
+        .then(machines => {
+          machines[0]._doc.usedCpus --; //task完成后，对应machine的当前使用cpu数减1
+          return Machine.update({ 'id': machineId }, { 'usedCpus': machines[0]._doc.usedCpus })
+            .then(() => {
+              logger.debug(`释放machine ${machineId}成功！`);
+              return machines[0];
+            });
+        })
+        .then(machine => {
+          return getNextTask(machine);
+        })
+        .then(nextTask => {
+          if (R.isNil(nextTask)) {
+            logger.debug('无下一任务运行！');
+            return Promise.resolve();
+          }
+          logger.debug('执行下一个任务：', nextTask._doc.id);
+          onTaskSchedule(nextTask._doc); // 继续调度下一任务，此时已可释放lock锁
+          return Promise.resolve();
+        })
+        .catch(err => logger.error(err));
+    });
   });
 }
 
@@ -51,6 +61,7 @@ function onTaskSchedule(task) {
     return co(function* () {
       const usefulMachines = yield checkAvailableMachines(task);
       if (!usefulMachines) {
+        logger.info(task.id + ' --> ' + null);
         return Promise.resolve(null);
       }
       // 优先使用group能分配上的machine，如果多个machine满足，则优先使用id更小的
@@ -64,10 +75,11 @@ function onTaskSchedule(task) {
           .then(res => logger.debug('更新machineId成功：', res))
           .catch(err => logger.error('更新machineId失败，原因为：', err))
       ])
-        // .then(() => setTimeout(() => {
-        //   onTaskDone(task);
-        // }, task.times * 1000))
+        .then(() => setTimeout(() => {
+          onTaskDone(task);
+        }, task.times * 1000))
         .then(() => {
+          logger.info(task.id + ' --> ' + sortMachines[0].id);
           return sortMachines[0].id;
         });
     });
