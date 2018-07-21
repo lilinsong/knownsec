@@ -94,7 +94,7 @@ function checkAvailableMachines(task) {
     let usefulMachines = [];
     for (let machine of machines) {
       unusedCpus += machine.cpus - machine.usedCpus;
-      let usefulCpus = machine.cpus - machine.usedCpus;
+      let usefulCpus = machine.cpus - machine.usedCpus;  // 每个machine可使用的cpu数
       // task.cpus固定为1，此处这么写是考虑若某个任务task.cpus大于1，则该任务只能分配到具有多个cpu的machine
       if (usefulCpus >= task.cpus && (machine.group === '' || machine.group === task.group)) {
         usefulMachines.push(machine);
