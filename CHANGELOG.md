@@ -7,3 +7,7 @@
 2. 增加服务，便于新任务请求过来
 3. 定时检测是否有空闲machine，是否有任务待执行
 4. 增加insertMachines和insertTasks脚本，便于将任务导入mongodb
+
+## [1.0.1] - 2018-7-21
+1. 编写onTaskSchedule单元测试
+2. 增加README.md文件
