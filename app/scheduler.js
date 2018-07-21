@@ -51,6 +51,10 @@ function getNextTask(machine) {
   }
   return Task.findOne(query)
     .then(task => {
+      if (R.isNil(task)) { // 如果task为空，查找是否还有未执行的任务等待执行
+        return Task.findOne({ 'machineId': null })
+          .then(task => task);
+      }
       return task;
     });
 }

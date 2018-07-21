@@ -44,6 +44,8 @@ Task.remove({})
   .then(() => Task.insertMany(tasks, function(error) {
     if (error) {
       logger.error('插入失败!');
+      process.exit(1);
     }
     logger.debug('插入成功!');
+    process.exit(0);
   }));
