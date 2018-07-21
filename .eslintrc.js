@@ -32,6 +32,8 @@ module.exports = {
     "globals": {
       "logger": true,
       "Task": true,
-      "Machine": true
+      "Machine": true,
+      "it": true,
+      "describe": true
     }
 };
