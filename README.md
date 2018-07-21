@@ -20,6 +20,7 @@
     5. scheduler文件
 
       该项目的核心文件，该文件主要包含了onTaskDone()和onTaskSchedule()方法，以及一些其他调用方法
+
   2. config
 
     config目录是mongodb的一些配置信息
@@ -34,7 +35,6 @@
   3. 启动项目之前，请先运行两个脚本，将tasks信息和machines信息设置到mongodb，脚本运行命令如下：
     ```
       npm run start-insert-task,
-
       npm run start-insert-machine
     ```
   4. 输入npm start启动项目，启动之前请确保您本地8081端口未被占用，可通过`lsof -i:8081`命令查看，若有占用可先kill相应进程或者修改项目监听端口
